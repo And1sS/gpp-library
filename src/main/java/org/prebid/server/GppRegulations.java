@@ -10,12 +10,12 @@ public class GppRegulations {
         System.loadLibrary("gpplib");
     }
 
-    private Map<String, GppSection> sections = new HashMap<>();
+    private Map<String, String> sections = new HashMap<>();
 
     public GppRegulations() {
     }
 
-    private GppRegulations(Map<String, GppSection> sections) {
+    public GppRegulations(Map<String, String> sections) {
         this.sections = Objects.requireNonNull(sections);
     }
 
@@ -27,7 +27,7 @@ public class GppRegulations {
         return new GppRegulations(decodeSections(encoded));
     }
 
-    private static native Map<String, GppSection> decodeSections(String encoded);
+    private static native Map<String, String> decodeSections(String encoded);
 
-    private static native String encodeSections(Map<String, GppSection> sections);
+    private static native String encodeSections(Map<String, String> sections);
 }

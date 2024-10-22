@@ -2,19 +2,19 @@
 #define GPP_UTIL_H
 
 #include <jni.h>
-#include <map>
+#include <unordered_map>
 #include <string>
 
-jobject StlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::string> &map) {
+jobject to_jvm_hash_map(JNIEnv *env, const std::unordered_map<std::string, std::string> &map) {
     jclass mapClass = env->FindClass("java/util/HashMap");
-    if (mapClass == NULL)
-        return NULL;
+    if (!mapClass)
+        return nullptr;
 
     jmethodID init = env->GetMethodID(mapClass, "<init>", "()V");
     jobject hashMap = env->NewObject(mapClass, init);
     jmethodID put = env->GetMethodID(mapClass, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
 
-    std::map<std::string, std::string>::const_iterator citr = map.begin();
+    std::unordered_map<std::string, std::string>::const_iterator citr = map.begin();
     for (; citr != map.end(); ++citr) {
         jstring keyJava = env->NewStringUTF(citr->first.c_str());
         jstring valueJava = env->NewStringUTF(citr->second.c_str());
@@ -25,82 +25,74 @@ jobject StlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string,
         env->DeleteLocalRef(valueJava);
     }
 
-    jobject hashMapGobal = static_cast<jobject>(env->NewGlobalRef(hashMap));
+    jobject hashMapGlobal = static_cast<jobject>(env->NewGlobalRef(hashMap));
     env->DeleteLocalRef(hashMap);
     env->DeleteLocalRef(mapClass);
 
-    return hashMapGobal;
+    return hashMapGlobal;
 }
 
 // Based on android platform code from: /media/jni/android_media_MediaMetadataRetriever.cpp
-void JavaHashMapToStlStringStringMap(JNIEnv *env, jobject hashMap, std::map<std::string, std::string> &mapOut) {
-    // Get the Map's entry Set.
+void to_c_unordered_map(JNIEnv *env, jobject hashMap, std::unordered_map<std::string, std::string> &mapOut) {
     jclass mapClass = env->FindClass("java/util/Map");
-    if (mapClass == NULL) {
+    if (!mapClass)
         return;
-    }
-    jmethodID entrySet =
-            env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
-    if (entrySet == NULL) {
+
+    jmethodID entrySet = env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
+    if (!entrySet)
         return;
-    }
+
     jobject set = env->CallObjectMethod(hashMap, entrySet);
-    if (set == NULL) {
+    if (!set)
         return;
-    }
-    // Obtain an iterator over the Set
+
     jclass setClass = env->FindClass("java/util/Set");
-    if (setClass == NULL) {
+    if (!setClass)
         return;
-    }
-    jmethodID iterator =
-            env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
-    if (iterator == NULL) {
+
+    jmethodID iterator = env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
+    if (!iterator)
         return;
-    }
+
     jobject iter = env->CallObjectMethod(set, iterator);
-    if (iter == NULL) {
+    if (!iter)
         return;
-    }
+
     // Get the Iterator method IDs
     jclass iteratorClass = env->FindClass("java/util/Iterator");
-    if (iteratorClass == NULL) {
+    if (!iteratorClass)
         return;
-    }
+
     jmethodID hasNext = env->GetMethodID(iteratorClass, "hasNext", "()Z");
-    if (hasNext == NULL) {
+    if (!hasNext)
         return;
-    }
-    jmethodID next =
-            env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
-    if (next == NULL) {
+
+    jmethodID next = env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
+    if (!next)
         return;
-    }
-    // Get the Entry class method IDs
+
     jclass entryClass = env->FindClass("java/util/Map$Entry");
-    if (entryClass == NULL) {
+    if (!entryClass)
         return;
-    }
-    jmethodID getKey =
-            env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
-    if (getKey == NULL) {
+
+    jmethodID getKey = env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
+    if (!getKey)
         return;
-    }
-    jmethodID getValue =
-            env->GetMethodID(entryClass, "getValue", "()Ljava/lang/Object;");
-    if (getValue == NULL) {
+
+    jmethodID getValue = env->GetMethodID(entryClass, "getValue", "()Ljava/lang/Object;");
+    if (!getValue)
         return;
-    }
+
     // Iterate over the entry Set
     while (env->CallBooleanMethod(iter, hasNext)) {
         jobject entry = env->CallObjectMethod(iter, next);
         jstring key = (jstring) env->CallObjectMethod(entry, getKey);
         jstring value = (jstring) env->CallObjectMethod(entry, getValue);
-        const char *keyStr = env->GetStringUTFChars(key, NULL);
-        if (!keyStr) {  // Out of memory
+        const char *keyStr = env->GetStringUTFChars(key, nullptr);
+        if (!keyStr)   // Out of memory
             return;
-        }
-        const char *valueStr = env->GetStringUTFChars(value, NULL);
+
+        const char *valueStr = env->GetStringUTFChars(value, nullptr);
         if (!valueStr) {  // Out of memory
             env->ReleaseStringUTFChars(key, keyStr);
             return;

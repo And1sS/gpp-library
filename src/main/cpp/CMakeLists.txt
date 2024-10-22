@@ -7,15 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SOURCE_FILES
         bindings/java/gpp_java_bindings.cpp
-        lib/GppDecoder.cpp
-        lib/GppDecoder.h
-        bindings/java/util.h)
+        lib/gpp.cpp)
 
 set(HEADER_FILES
-        bindings/java/org_prebid_server_hooks_modules_GppRegulations.h
-        lib/GppDecoder.cpp
-        lib/GppDecoder.h
-        bindings/java/util.h)
+        bindings/java/util.h
+        lib/gpp.h)
 
 include_directories(
         /usr/lib/jvm/java-1.21.0-openjdk-amd64/include

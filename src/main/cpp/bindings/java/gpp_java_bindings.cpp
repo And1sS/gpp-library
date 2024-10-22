@@ -1,41 +1,31 @@
 #include "org_prebid_server_GppRegulations.h"
-#include "../../lib/GppDecoder.h"
+#include "../../lib/gpp.h"
+#include "util.h"
 #include <iostream>
-
-void String_Intern(JNIEnv *env, jstring str) {
-    jclass stringClass = env->FindClass("Ljava/lang/String;");
-    jmethodID internMethodId = env->GetMethodID(stringClass, "intern", "()Ljava/lang/String;");
-    env->CallObjectMethod(str, internMethodId);
-}
 
 jobject JNICALL
 Java_org_prebid_server_GppRegulations_decodeSections(JNIEnv *env, jclass clazz, jstring jEncoded) {
-    if (jEncoded == nullptr)
+    if (!jEncoded)
         throw "THROW PROPER EXCEPTION";
-
-    std::cout << "HELLO FROM C++!" << std::endl;
 
     const char *cEncoded = env->GetStringUTFChars(jEncoded, nullptr);
     if (!cEncoded)
         throw "THROW PROPER EXCEPTION";
 
     std::string encoded = cEncoded;
-
-    decode_gpp_string(encoded);
-    std::cout << encoded << std::endl;
-
     env->ReleaseStringUTFChars(jEncoded, cEncoded);
 
-    return nullptr;
+    return to_jvm_hash_map(env, decode_gpp_string(std::move(encoded)));
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_prebid_server_GppRegulations_encodeSections(JNIEnv *env, jclass clazz, jobject self) {
+Java_org_prebid_server_GppRegulations_encodeSections(JNIEnv *env, jclass clazz, jobject jMap) {
     std::cout << "HELLO FROM C++!" << std::endl;
 
-    jstring str = env->NewStringUTF("test");
-    String_Intern(env, str);
+    std::unordered_map<std::string, std::string> cMap;
+    to_c_unordered_map(env, jMap, cMap);
 
-    return str;
+    std::string encoded = encode_gpp_sections(std::move(cMap));
+    return env->NewStringUTF(encoded.c_str());
 }
 
